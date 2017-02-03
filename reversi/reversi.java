@@ -1,4 +1,5 @@
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
@@ -15,26 +16,46 @@ public class reversi {
 	}
 
 	private static void startGame() {
+		HashMap<Coords, ArrayList<Coords>> legalMoves;
 		while (true) {
-			playerMove();
+			legalMoves = getLegalMoves("WHITE", "BLACK");
+			System.out.println(legalMoves);
+			playerMove(legalMoves);
 			draw();
-			compMove();
+			legalMoves.clear();
+			legalMoves = getLegalMoves("BLACK", "WHITE");
+			compMove(legalMoves);
 			draw();
+			legalMoves.clear();
 		}
 
 	}
 
-	private static void compMove() {
-		// TODO Auto-generated method stub
-		
+	private static HashMap<Coords, ArrayList<Coords>> getLegalMoves(String color, String oppColor) {
+		HashMap<Coords, ArrayList<Coords>> legalMoves = new HashMap<Coords, ArrayList<Coords>>();
+		for(int i = 0; i < size; i++){
+			for(int j = 0; j < size; j++){
+				ArrayList<Coords> currList = isLegalMove(new Coords(i,j), oppColor, color);
+				if(!currList.isEmpty()){
+					legalMoves.put(new Coords(i,j), currList);
+				}
+			}
+		}
+		return legalMoves;
 	}
 
-	private static void playerMove() {
+	private static void compMove(HashMap<Coords, ArrayList<Coords>> legalMoves) {
+		// TODO Auto-generated method stub
+
+	}
+
+	private static void playerMove(HashMap<Coords, ArrayList<Coords>> legalMoves) {
 		s = new Scanner(System.in);
 		boolean accepted = false;
 		String[] inputs = null;
 		int inputA = 0;
 		int inputB = 0;
+		Coords coord = null;
 		while (!accepted) {
 			String input = s.nextLine();
 			inputs = input.split("");
@@ -42,10 +63,11 @@ public class reversi {
 					|| !Pattern.matches("[1-8]", inputs[1])) {
 				System.out.println("Faulty input, try again");
 			} else {
-				inputB = inputs[0].toLowerCase().charAt(0) - 'a';
-				inputA = Integer.parseInt(inputs[1])-1;
-				Coords coord = new Coords(inputA, inputB);
-				if (isLegalMove(coord, "BLACK", "WHITE")) {
+				inputA = inputs[0].toLowerCase().charAt(0) - 'a';
+				inputB = Integer.parseInt(inputs[1])-1;
+				coord = new Coords(inputA, inputB);
+				System.out.println(coord);
+				if (legalMoves.containsKey(coord)) {
 					accepted = true;
 				} else {
 					System.out.println("Illegal move, try again");
@@ -53,46 +75,121 @@ public class reversi {
 			}
 		}
 
-		board[inputA][inputB] = "WHITE";
-
-	}
-
-	private static boolean isLegalMove(Coords coord, String opponentCol, String col) {
-		if(!board[coord.x][coord.y].equals("EMPTY")){
-			return false;
+		board[inputB][inputA] = "WHITE";
+		for(Coords c : legalMoves.get(coord)){
+			board[c.y][c.x] = "WHITE"; 
 		}
-		checkAxis(coord.x+1, coord.y, opponentCol, col, "E");
-		checkAxis(coord.x+1, coord.y+1, opponentCol, col, "SE");
-		checkAxis(coord.x, coord.y+1, opponentCol, col, "S");
-		checkAxis(coord.x-1, coord.y+1, opponentCol, col, "SW");
-		checkAxis(coord.x-1, coord.y, opponentCol, col, "W");
-		checkAxis(coord.x-1, coord.y-1, opponentCol, col, "NW");
-		checkAxis(coord.x, coord.y-1, opponentCol, col, "N");
-		checkAxis(coord.x+1, coord.y, opponentCol, col, "NE");
-		
-		return true;
 
 	}
 
-	private static boolean checkAxis(int x, int y, String opponentCol,
-			String col, String direction) {
-		if(board[x][y].equals("EMPTY") || x == 8 || x == -1 || y == 8 || y == -1){
+	private static ArrayList<Coords> isLegalMove(Coords coord,
+			String opponentColor, String color) {
+		ArrayList<Coords> list = new ArrayList<Coords>();
+		if (!board[coord.y][coord.x].equals("EMPTY")) {
+			return list;
+		}
+		checkAxis(coord.x + 1, coord.y, opponentColor, color, "E", list, true);
+		checkAxis(coord.x + 1, coord.y + 1, opponentColor, color, "SE", list,
+				true);
+		checkAxis(coord.x, coord.y + 1, opponentColor, color, "S", list, true);
+		checkAxis(coord.x - 1, coord.y + 1, opponentColor, color, "SW", list,
+				true);
+		checkAxis(coord.x - 1, coord.y, opponentColor, color, "W", list, true);
+		checkAxis(coord.x - 1, coord.y - 1, opponentColor, color, "NW", list,
+				true);
+		checkAxis(coord.x, coord.y - 1, opponentColor, color, "N", list, true);
+		checkAxis(coord.x + 1, coord.y, opponentColor, color, "NE", list, true);
+
+		return list;
+
+	}
+
+	private static boolean checkAxis(int x, int y, String opponentColor,
+			String color, String direction, ArrayList<Coords> list,
+			boolean first) {
+
+		if (x == 8 || x == -1 || y == 8
+				|| y == -1 || board[y][x].equals("EMPTY")) {
 			return false;
-		} else if(board[x][y].equals(col)){
+		} else if (board[y][x].equals(color) && !first) {
 			return true;
 		}
-		switch(direction){
-		case("E"): return board[x][y] == opponentCol && checkAxis(x+1, y, opponentCol, col, "E");
-		case("SE"): return board[x][y] == opponentCol && checkAxis(x+1, y+1, opponentCol, col, "E");
-		case("S"): return board[x][y] == opponentCol && checkAxis(x, y+1, opponentCol, col, "E");
-		case("SW"): return board[x][y] == opponentCol && checkAxis(x-1, y+1, opponentCol, col, "E");
-		case("W"): return board[x][y] == opponentCol && checkAxis(x-1, y, opponentCol, col, "E");
-		case("NW"): return board[x][y] == opponentCol && checkAxis(x-1, y-1, opponentCol, col, "E");
-		case("N"): return board[x][y] == opponentCol && checkAxis(x, y-1, opponentCol, col, "E");
-		case("NE"): return board[x][y] == opponentCol && checkAxis(x+1, y-1, opponentCol, col, "E");
+		switch (direction) {
+		case ("E"):
+			if (board[y][x].equals(opponentColor)
+					&& checkAxis(x + 1, y, opponentColor, color, "E", list,
+							false)) {
+				list.add(new Coords(x, y));
+				return true;
+			} else {
+				return false;
+			}
+		case ("SE"):
+			if (board[y][x].equals(opponentColor)
+					&& checkAxis(x + 1, y + 1, opponentColor, color, "SE",
+							list, false)) {
+				list.add(new Coords(x, y));
+				return true;
+			} else {
+				return false;
+			}
+		case ("S"):
+			if (board[y][x].equals(opponentColor)
+					&& checkAxis(x, y + 1, opponentColor, color, "S", list,
+							false)) {
+				list.add(new Coords(x, y));
+				return true;
+			} else {
+				return false;
+			}
+		case ("SW"):
+			if (board[y][x].equals(opponentColor)
+					&& checkAxis(x - 1, y + 1, opponentColor, color, "SW",
+							list, false)) {
+				list.add(new Coords(x, y));
+				return true;
+			} else {
+				return false;
+			}
+		case ("W"):
+			if (board[y][x].equals(opponentColor)
+					&& checkAxis(x - 1, y, opponentColor, color, "W", list,
+							false)) {
+				list.add(new Coords(x, y));
+				return true;
+			} else {
+				return false;
+			}
+		case ("NW"):
+			if (board[y][x].equals(opponentColor)
+					&& checkAxis(x - 1, y - 1, opponentColor, color, "NW",
+							list, false)) {
+				list.add(new Coords(x, y));
+				return true;
+			} else {
+				return false;
+			}
+		case ("N"):
+			if (board[y][x].equals(opponentColor)
+					&& checkAxis(x, y - 1, opponentColor, color, "N", list,
+							false)) {
+				list.add(new Coords(x, y));
+				return true;
+			} else {
+				return false;
+			}
+		case ("NE"):
+			if (board[y][x].equals(opponentColor)
+					&& checkAxis(x + 1, y - 1, opponentColor, color, "NE",
+							list, false)) {
+				list.add(new Coords(x, y));
+				return true;
+			} else {
+				return false;
+			}
 		}
 		return false;
-		
+
 	}
 
 	private static void draw() {
@@ -111,7 +208,7 @@ public class reversi {
 					System.out.print(" W |");
 				} else if (board[i][j].equals("BLACK")) {
 					System.out.print(" B |");
-				} 
+				}
 			}
 			System.out.println("");
 		}
@@ -128,8 +225,6 @@ public class reversi {
 		board[4][4] = "WHITE";
 		board[3][4] = "BLACK";
 		board[4][3] = "BLACK";
+		
 	}
-	
-	
 }
-
