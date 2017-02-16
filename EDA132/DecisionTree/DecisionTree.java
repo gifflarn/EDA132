@@ -21,6 +21,8 @@ public class DecisionTree {
 	public static List<List<String>> entries;
 
 	static int counter = 0;
+	static boolean first = true;
+	static TreeNode<String> tree;
 
 	public static void main(String[] args) {
 		relation = new String();
@@ -35,18 +37,20 @@ public class DecisionTree {
 		System.out.println(possibilities);
 		System.out.println(attributeMap);
 		System.out.println(entries);
-
-		buildTree(entries, entries.size());
-
+		tree = new TreeNode<String>("root");
+		buildTree(tree, attributes, entries);
+		System.out.println(TreeNode.toStringTree(tree));
+		
 	}
 
-	private static void buildTree(List<List<String>> entries, int size) {
-		System.out.println(size);
-		if (size == 0 || entries.isEmpty()) {
+	private static void buildTree(TreeNode<String> previous,
+			List<String> attributes, List<List<String>> examples) {
+		if (examples.get(0) == null || examples.get(0).isEmpty()
+				|| attributes.isEmpty()) {
 			return;
 		}
 		counter = 0;
-		double entropy = calcEntropy(entries, size);
+		double entropy = calcEntropy(examples, examples.size());
 		double maxgain = 0;
 		int toSplit = 0;
 		for (int i = 0; i < attributes.size() - 1; i++) {
@@ -56,12 +60,11 @@ public class DecisionTree {
 				toSplit = i;
 			}
 		}
-		attributes.remove(toSplit);
 		HashMap<String, ArrayList<List<String>>> map = new HashMap<String, ArrayList<List<String>>>();
-		for (List<String> temp : entries) {
+		for (List<String> temp : examples) {
 			try {
 				ArrayList<List<String>> copy = map.get(temp.get(toSplit));
-			//	temp.remove(toSplit);
+				// temp.remove(toSplit);
 				copy.add(temp);
 				map.put(temp.remove(toSplit), copy);
 			} catch (NullPointerException e) {
@@ -71,8 +74,24 @@ public class DecisionTree {
 			}
 		}
 		System.out.println(map);
-		for(Map.Entry<String, ArrayList<List<String>>> currMap : map.entrySet()){
-			buildTree(currMap.getValue(), size--);
+		attributes.remove(toSplit);
+		for (Map.Entry<String, ArrayList<List<String>>> currMap : map
+				.entrySet()) {
+			if (first) {
+				first = false;
+			} else {
+				if (attributes.isEmpty()) {
+					return;
+				}
+				if (attributes.size() == 0 || examples.size() == 0) {
+					previous.addChild(examples.get(0).get(0));
+				} else {
+					TreeNode<String> next = new TreeNode<String>(currMap.getKey());
+					previous.addChild(next);
+					buildTree(next, attributes, currMap.getValue());
+				}
+			}
+
 		}
 	}
 
@@ -188,4 +207,5 @@ public class DecisionTree {
 			e.printStackTrace();
 		}
 	}
+
 }
