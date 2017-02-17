@@ -39,22 +39,45 @@ public class DecisionTree {
 		System.out.println(entries);
 		tree = new TreeNode<String>("root");
 		buildTree(tree, attributes, entries);
-		System.out.println(TreeNode.toStringTree(tree));
-		
+		tree.print(" ", true);
+
 	}
 
 	private static void buildTree(TreeNode<String> previous,
 			List<String> attributes, List<List<String>> examples) {
+
+		System.out.println(attributes + " " + examples);
+
 		if (examples.get(0) == null || examples.get(0).isEmpty()
 				|| attributes.isEmpty()) {
 			return;
 		}
+		String s1 = examples.get(0).get(examples.get(0).size() - 1);
+		boolean anyOneSame = true;
+		for (List<String> s : examples) {
+			if (!s1.equals(s.get(s.size() - 1))) {
+				anyOneSame = false;
+				break;
+			}
+		}
+		if (anyOneSame) {
+			TreeNode<String> next = new TreeNode<String>(examples.get(0).get(examples.get(0).size() - 1));
+			next.parent = previous;
+			previous.addChild(next);
+			return;
+		}
+
 		counter = 0;
 		double entropy = calcEntropy(examples, examples.size());
 		double maxgain = 0;
 		int toSplit = 0;
 		for (int i = 0; i < attributes.size() - 1; i++) {
-			double currGain = calcGain(entropy, i);
+			double currGain = calcGain(entropy, i, examples, attributes);
+			if (previous.data.equals("rainy")) {
+				System.out.println("Entropy for "
+						+ attributeMap.get(attributes.get(i)) + " : "
+						+ currGain);
+			}
 			if (currGain > maxgain) {
 				maxgain = currGain;
 				toSplit = i;
@@ -73,32 +96,36 @@ public class DecisionTree {
 				map.put(temp.remove(toSplit), copy);
 			}
 		}
-		System.out.println(map);
 		attributes.remove(toSplit);
 		for (Map.Entry<String, ArrayList<List<String>>> currMap : map
 				.entrySet()) {
-			if (first) {
-				first = false;
+			if (currMap.getKey().equals("cool")) {
+				System.out.println("hej");
+			}
+			if (attributes.size() <= 1 || examples.size() <= 1) {
+				TreeNode<String> next = new TreeNode<String>(examples.get(0).get(0));
+				next.parent = previous;
+				previous.addChild(next);
+				// System.out.println(TreeNode.toStringTree(previous));
 			} else {
-				if (attributes.isEmpty()) {
-					return;
-				}
-				if (attributes.size() == 0 || examples.size() == 0) {
-					previous.addChild(examples.get(0).get(0));
-				} else {
-					TreeNode<String> next = new TreeNode<String>(currMap.getKey());
-					previous.addChild(next);
-					buildTree(next, attributes, currMap.getValue());
-				}
+				TreeNode<String> next = new TreeNode<String>(currMap.getKey());
+				next.parent = previous;
+				previous.addChild(next);
+				if (previous.data.equals("rainy"))
+					System.out.println(currMap.getKey());
+				buildTree(next, new ArrayList<String>(attributes),
+						new ArrayList<List<String>>(currMap.getValue()));
+				// System.out.println(TreeNode.toStringTree(previous));
 			}
 
 		}
 	}
 
-	private static double calcGain(double entropy, int current) {
+	private static double calcGain(double entropy, int current,
+			List<List<String>> currEntries, List<String> currAttributes) {
 		double gain = entropy;
 		Map<String, Integer> map = new HashMap<String, Integer>();
-		for (List<String> temp : entries) {
+		for (List<String> temp : currEntries) {
 			Integer count = map.get(temp.get(current));
 			map.put(temp.get(current), (count == null) ? 1 : count + 1);
 		}
@@ -108,10 +135,12 @@ public class DecisionTree {
 		for (Map.Entry<String, Integer> curr : map.entrySet()) {
 
 			ArrayList<List<String>> tempList = new ArrayList<List<String>>();
-			for (int i = 0; i < entries.size(); i++) {
+			for (int i = 0; i < currEntries.size(); i++) {
 				ArrayList<String> tempTempList = new ArrayList<String>();
-				if (entries.get(i).get(counter).equals(curr.getKey())) {
-					tempTempList.add(entries.get(i).get(attributes.size() - 1));
+				if (currEntries.get(i).get(counter).equals(curr.getKey())) {
+					// System.out.println(currEntries.get(0).size());
+					tempTempList.add(currEntries.get(i).get(
+							currAttributes.size() - 1));
 					tempList.add(tempTempList);
 					list.put(curr.getKey(), tempList);
 				}
